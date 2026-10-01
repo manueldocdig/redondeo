@@ -5,6 +5,8 @@ Uso:
     python3 scripts/preparar_tiendas.py "/ruta/a/RUTA DE TIENDAS 2026.xlsx"
 
 Si existe data/personas.txt (un nombre por línea), también agrega esas personas al seed.
+Si existe data/ubicaciones.csv (cr,lat,lng), esas coordenadas corregidas a mano ganan
+sobre las del Excel y la geocodificación.
 
 Salidas (fuera de git):
     data/tiendas.json   -> revisión manual
@@ -140,9 +142,20 @@ def main():
             "ubicacion_aprox": not coord_valida(lat, lng),
         })
 
+    manuales = RAIZ / "data" / "ubicaciones.csv"
+    if manuales.exists():
+        por_cr = {t["cr"]: t for t in tiendas}
+        for linea in manuales.read_text().splitlines():
+            partes = [x.strip() for x in linea.split(",")]
+            if len(partes) != 3 or partes[0].lower() == "cr" or partes[0] not in por_cr:
+                continue
+            t = por_cr[partes[0]]
+            t["lat"], t["lng"], t["ubicacion_aprox"] = float(partes[1]), float(partes[2]), False
+            print(f"Ubicación manual: {t['cr']} {t['nombre']} -> {t['lat']},{t['lng']}")
+
     print(f"Tiendas {ORGANIZACION}: {len(tiendas)}")
     faltan = [t for t in tiendas if t["ubicacion_aprox"]]
-    print(f"Con coordenadas del Excel: {len(tiendas) - len(faltan)}  |  A geocodificar: {len(faltan)}")
+    print(f"Con coordenadas (Excel o manuales): {len(tiendas) - len(faltan)}  |  A geocodificar: {len(faltan)}")
 
     for t in faltan:
         ciudad = f"{t['municipio'].title()}, Baja California"
