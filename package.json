@@ -1,0 +1,20 @@
+{
+  "name": "redondeo-nicoya",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "demo": "VITE_DEMO=1 vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "datos": "python3 scripts/preparar_tiendas.py"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "vite": "^8.3.1"
+  }
+}

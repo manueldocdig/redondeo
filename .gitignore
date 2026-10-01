@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.local
+# Datos del Excel y accesos: nunca al repo (el repo es público)
+data/
+supabase/seed.sql
+.playwright-mcp/
