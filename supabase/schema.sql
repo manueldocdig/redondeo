@@ -1,7 +1,8 @@
 -- Redondeo Fundación Nicoya: esquema de Supabase.
 -- Pegar completo en Supabase > SQL Editor > Run. Se puede volver a correr sin romper nada.
 --
--- Hay 2 cuentas compartidas (las creas en Authentication > Users > Add user):
+-- Cuentas compartidas (las creas en Authentication > Users > Add user):
+--   redondeo@redondeo-nicoya.test      -> voluntarios
 --   equipo@redondeo-nicoya.test        -> voluntarios
 --   coordinacion@redondeo-nicoya.test  -> coordinación (puede reasignar, deshacer, etc.)
 -- Al entrar, cada quien elige su nombre de la tabla `personas`; las tiendas quedan a nombre
@@ -77,14 +78,14 @@ create table if not exists public.movimientos (
 );
 create index if not exists movimientos_cr_idx on public.movimientos (cr, creado_en desc);
 
--- ---------------------------------------------------------------- Alta automática de las 2 cuentas
+-- ---------------------------------------------------------------- Alta automática de las cuentas compartidas
 create or replace function public.alta_integrante() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
   if new.email = 'coordinacion@redondeo-nicoya.test' then
     insert into public.integrantes (user_id, nombre, rol) values (new.id, 'Coordinación', 'coordinador')
     on conflict (user_id) do nothing;
-  elsif new.email = 'equipo@redondeo-nicoya.test' then
+  elsif new.email in ('equipo@redondeo-nicoya.test', 'redondeo@redondeo-nicoya.test') then
     insert into public.integrantes (user_id, nombre, rol) values (new.id, 'Equipo', 'voluntario')
     on conflict (user_id) do nothing;
   end if;
@@ -101,7 +102,7 @@ select id,
        case when email like 'coordinacion@%' then 'Coordinación' else 'Equipo' end,
        case when email like 'coordinacion@%' then 'coordinador'::public.rol_integrante else 'voluntario' end
   from auth.users
- where email in ('coordinacion@redondeo-nicoya.test', 'equipo@redondeo-nicoya.test')
+ where email in ('coordinacion@redondeo-nicoya.test', 'equipo@redondeo-nicoya.test', 'redondeo@redondeo-nicoya.test')
 on conflict (user_id) do nothing;
 
 -- ---------------------------------------------------------------- Helpers
