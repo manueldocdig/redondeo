@@ -2,7 +2,7 @@
 -- Pegar completo en Supabase > SQL Editor > Run. Se puede volver a correr sin romper nada.
 --
 -- Cuentas compartidas (las creas en Authentication > Users > Add user):
---   redondeo@redondeo-nicoya.test      -> voluntarios
+--   redondeo@oxxo.test                 -> voluntarios
 --   equipo@redondeo-nicoya.test        -> voluntarios
 --   coordinacion@redondeo-nicoya.test  -> coordinación (puede reasignar, deshacer, etc.)
 -- Al entrar, cada quien elige su nombre de la tabla `personas`; las tiendas quedan a nombre
@@ -85,7 +85,7 @@ begin
   if new.email = 'coordinacion@redondeo-nicoya.test' then
     insert into public.integrantes (user_id, nombre, rol) values (new.id, 'Coordinación', 'coordinador')
     on conflict (user_id) do nothing;
-  elsif new.email in ('equipo@redondeo-nicoya.test', 'redondeo@redondeo-nicoya.test') then
+  elsif new.email in ('equipo@redondeo-nicoya.test', 'redondeo@oxxo.test') then
     insert into public.integrantes (user_id, nombre, rol) values (new.id, 'Equipo', 'voluntario')
     on conflict (user_id) do nothing;
   end if;
@@ -102,7 +102,7 @@ select id,
        case when email like 'coordinacion@%' then 'Coordinación' else 'Equipo' end,
        case when email like 'coordinacion@%' then 'coordinador'::public.rol_integrante else 'voluntario' end
   from auth.users
- where email in ('coordinacion@redondeo-nicoya.test', 'equipo@redondeo-nicoya.test', 'redondeo@redondeo-nicoya.test')
+ where email in ('coordinacion@redondeo-nicoya.test', 'equipo@redondeo-nicoya.test', 'redondeo@oxxo.test')
 on conflict (user_id) do nothing;
 
 -- ---------------------------------------------------------------- Helpers

@@ -8,8 +8,10 @@ if (!url || !key) {
   throw new Error('Faltan VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (ver .env.example)')
 }
 
-// Las cuentas compartidas son "equipo" y "coordinacion"; por dentro Supabase usa un correo.
+// Las cuentas compartidas se escriben como usuario ("redondeo", "coordinacion"…);
+// por dentro Supabase usa un correo.
 const DOMINIO_CUENTAS = 'redondeo-nicoya.test'
+const CORREOS_ESPECIALES = { redondeo: 'redondeo@oxxo.test' }
 
 const sb = createClient(url, key)
 
@@ -34,7 +36,7 @@ export function alCambiarSesion(cb) {
 
 export async function entrar(usuario, password) {
   const u = usuario.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  const email = u.includes('@') ? u : `${u}@${DOMINIO_CUENTAS}`
+  const email = u.includes('@') ? u : CORREOS_ESPECIALES[u] ?? `${u}@${DOMINIO_CUENTAS}`
   const { error } = await sb.auth.signInWithPassword({ email, password })
   if (error) throw falla(error)
 }
