@@ -78,7 +78,7 @@ export function htmlEquipo() {
       <div class="acciones">
         ${soyCoordinador() ? `<button class="btn" data-accion="csv">Descargar reporte (CSV)</button>` : ''}
         <button class="btn btn-sutil" data-accion="cambiar-persona">No soy ${esc(nombre(S.yo))}, cambiar</button>
-        <button class="btn btn-sutil" data-accion="salir">Cerrar sesión</button>
+        <button class="btn btn-sutil" data-salir>Cerrar sesión</button>
       </div>
     </section>`
 }

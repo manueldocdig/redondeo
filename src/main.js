@@ -127,7 +127,8 @@ function iniciarApp() {
   $('app').hidden = false
   $('btn-quien').textContent = nombre(S.yo)
   $('btn-quien').classList.toggle('yo-coord', soyCoordinador())
-  $('btn-quien').title = soyCoordinador() ? 'Cuenta de coordinación' : ''
+  $('menu-nombre').textContent = nombre(S.yo)
+  $('menu-tipo').textContent = soyCoordinador() ? ', con cuenta de coordinación' : ''
   if (!appIniciada) {
     appIniciada = true
     crearMapa($('mapa'), (cr) => mostrarPanel('tienda', cr))
@@ -141,7 +142,31 @@ function iniciarApp() {
   actualizarAvance()
 }
 
-$('btn-quien').addEventListener('click', pedirPersona)
+// ---------------------------------------------------------------- Menú de la cuenta (tocar tu nombre)
+function abrirMenu(abrir) {
+  $('menu-cuenta').hidden = !abrir
+  $('btn-quien').setAttribute('aria-expanded', String(abrir))
+}
+$('btn-quien').addEventListener('click', (ev) => {
+  ev.stopPropagation()
+  abrirMenu($('menu-cuenta').hidden)
+})
+$('menu-cuenta').querySelector('[data-accion="cambiar-persona"]').addEventListener('click', () => {
+  abrirMenu(false)
+  pedirPersona()
+})
+document.addEventListener('click', (ev) => {
+  if (!$('menu-cuenta').hidden && !ev.target.closest('#menu-cuenta')) abrirMenu(false)
+  if (ev.target.closest('[data-salir]')) salir()
+})
+
+/** Cierra la sesión y olvida quién usaba este celular, para que el siguiente elija su nombre. */
+async function salir() {
+  if (!confirm('¿Cerrar sesión en este celular?')) return
+  try { localStorage.removeItem('redondeo-persona') } catch { /* sin almacenamiento */ }
+  await api.salir()
+  location.reload()
+}
 
 // ---------------------------------------------------------------- Cambios de datos
 /** Aplica un cambio de estado (propio o de otra persona del equipo) en toda la app. */
@@ -232,10 +257,6 @@ function conectarEquipo(cont) {
   })
   cont.querySelector('[data-accion="csv"]')?.addEventListener('click', descargarCSV)
   cont.querySelector('[data-accion="cambiar-persona"]').addEventListener('click', pedirPersona)
-  cont.querySelector('[data-accion="salir"]').addEventListener('click', async () => {
-    await api.salir()
-    location.reload()
-  })
   cont.querySelector('.form-persona')?.addEventListener('submit', async (ev) => {
     ev.preventDefault()
     const input = ev.currentTarget.querySelector('input')
@@ -253,7 +274,11 @@ function conectarEquipo(cont) {
 $('panel-cerrar').addEventListener('click', cerrarPanel)
 $('btn-equipo').addEventListener('click', () => (modoPanel === 'equipo' ? cerrarPanel() : mostrarPanel('equipo')))
 $('btn-lista').addEventListener('click', () => (modoPanel === 'lista' ? cerrarPanel() : mostrarPanel('lista')))
-document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && modoPanel) cerrarPanel() })
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Escape') return
+  if (!$('menu-cuenta').hidden) abrirMenu(false)
+  else if (modoPanel) cerrarPanel()
+})
 
 // ---------------------------------------------------------------- Filtros y búsqueda
 function pintarFiltros() {

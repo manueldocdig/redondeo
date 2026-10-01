@@ -88,8 +88,25 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .yo-coord { background: var(--apartada); border-color: var(--apartada); color: var(--tinta); }
 
+.barra { position: relative; }
+.menu-cuenta {
+  position: absolute; right: 16px; top: calc(env(safe-area-inset-top) + 50px); z-index: 30;
+  width: min(260px, calc(100vw - 32px)); padding: 6px;
+  background: var(--papel); color: var(--tinta); border-radius: var(--radio);
+  box-shadow: 0 6px 24px rgba(19, 35, 43, 0.3);
+}
+.menu-texto { margin: 8px 10px 6px; font-size: 0.92rem; color: var(--tinta-suave); line-height: 1.35; }
+.menu-texto b { color: var(--tinta); }
+.menu-opcion {
+  display: block; width: 100%; min-height: 48px; padding: 0 10px;
+  border: 0; border-radius: 8px; background: none; text-align: left; font-weight: 600; cursor: pointer;
+}
+.menu-opcion:hover { background: var(--niebla); }
+.menu-opcion[data-salir] { color: var(--peligro); }
+
 /* ¿Quién eres? */
 .quien-nombres { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.quien-salir { display: block; margin: 16px auto 0; }
 .avance {
   display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 4px 14px;
   width: 100%; padding: 0; border: 0; background: none; color: inherit; text-align: left; cursor: pointer;

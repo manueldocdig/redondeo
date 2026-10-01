@@ -37,13 +37,19 @@
         <h1 class="login-titulo">¿Quién eres?</h1>
         <p class="login-texto">Las tiendas que tomes y visites quedarán a tu nombre. Solo se pregunta una vez en este celular.</p>
         <div id="quien-nombres" class="quien-nombres"></div>
+        <button class="enlace quien-salir" type="button" data-salir>Cerrar sesión</button>
       </div>
     </section>
 
     <!-- App -->
     <section id="app" class="app" hidden>
       <header class="barra">
-        <button id="btn-quien" class="yo" type="button" aria-label="Cambiar de persona"></button>
+        <button id="btn-quien" class="yo" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-cuenta"></button>
+        <div id="menu-cuenta" class="menu-cuenta" role="menu" hidden>
+          <p class="menu-texto">Eres <b id="menu-nombre"></b><span id="menu-tipo"></span></p>
+          <button class="menu-opcion" role="menuitem" type="button" data-accion="cambiar-persona">Cambiar de persona</button>
+          <button class="menu-opcion" role="menuitem" type="button" data-salir>Cerrar sesión</button>
+        </div>
         <button id="btn-equipo" class="avance" type="button" aria-label="Ver avance del equipo">
           <span class="avance-cifras">
             <strong id="avance-hechas">0</strong>
