@@ -145,3 +145,82 @@ export function descargarCSV() {
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
+
+const porcentaje = (n, de) => (de ? Math.round((n / de) * 100) : 0)
+
+/** Tiendas de cada persona: las que tiene asignadas y las que ya visitó. */
+function tiendasPorPersona() {
+  const mapa = new Map([...S.personas.keys()].map((id) => [id, []]))
+  for (const e of S.estados.values()) {
+    const id = e.estado === 'visitada' ? e.visitada_por : e.estado === 'apartada' ? e.asignado_a : null
+    if (mapa.has(id)) mapa.get(id).push(e)
+  }
+  return mapa
+}
+
+/** Reporte: avance contra la meta y, por persona, su porcentaje y su lista de tiendas. */
+export function htmlReporte(abiertos = new Set()) {
+  const c = conteos()
+  const total = S.tiendas.size
+  const m = meta()
+  const faltan = Math.max(0, m - c.visitada)
+
+  const filas = [...tiendasPorPersona()]
+    .map(([id, estados]) => {
+      const visitadas = estados.filter((e) => e.estado === 'visitada')
+      return { id, estados, visitadas: visitadas.length, total: estados.length }
+    })
+    .sort((a, b) => b.visitadas - a.visitadas || b.total - a.total || nombre(a.id).localeCompare(nombre(b.id)))
+
+  const personas = filas.map(({ id, estados, visitadas, total: suyas }) => {
+    const pct = porcentaje(visitadas, suyas)
+    const orden = [...estados].sort((a, b) =>
+      (a.estado === 'visitada') - (b.estado === 'visitada') ||
+      (b.visitada_en || '').localeCompare(a.visitada_en || '') ||
+      S.tiendas.get(a.cr).nombre.localeCompare(S.tiendas.get(b.cr).nombre))
+    const lista = orden.map((e) => {
+      const t = S.tiendas.get(e.cr)
+      const detalle = e.estado === 'visitada' ? `Visitada ${formatoFecha(e.visitada_en)}` : 'Asignada, por visitar'
+      return `
+        <li>
+          <button class="item" data-cr="${esc(e.cr)}" style="--estado:${ESTADOS[e.estado].color}">
+            <span class="punto" aria-hidden="true"></span>
+            <span class="item-texto">
+              <span class="item-nombre">${esc(t.nombre)}</span>
+              <span class="item-sub">${esc(detalle)}${t.colonia ? `, ${esc(t.colonia)}` : ''}</span>
+            </span>
+          </button>
+        </li>`
+    }).join('')
+
+    return `
+      <details class="rep-persona" data-persona="${id}" ${abiertos.has(id) ? 'open' : ''}>
+        <summary>
+          <span class="rep-nombre">${esc(nombre(id))}${id === S.yo ? ' <span class="tu">(tú)</span>' : ''}</span>
+          <span class="rep-pct">${suyas ? `${pct}%` : '–'}</span>
+          <span class="rep-sub">${suyas ? `${visitadas} de ${suyas} ${suyas === 1 ? 'tienda visitada' : 'tiendas visitadas'}` : 'Sin tiendas asignadas'}</span>
+          ${suyas ? `<span class="rep-barra" aria-hidden="true"><span style="width:${pct}%"></span></span>` : ''}
+        </summary>
+        ${suyas ? `<ul class="rep-lista">${lista}</ul>` : ''}
+      </details>`
+  }).join('')
+
+  return `
+    <section class="reporte">
+      <h2 class="equipo-titulo">Reporte del redondeo</h2>
+      <p class="equipo-sub">Al ${esc(new Date().toLocaleString('es-MX', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }))}</p>
+
+      <dl class="rep-cifras">
+        <div><dt>Visitadas</dt><dd>${c.visitada}</dd></div>
+        <div><dt>Meta (${Math.round(PORCENTAJE_META * 100)}%)</dt><dd>${m}</dd></div>
+        <div><dt>Avance de la meta</dt><dd>${Math.min(100, porcentaje(c.visitada, m))}%</dd></div>
+        <div><dt>Del total de ${total}</dt><dd>${porcentaje(c.visitada, total)}%</dd></div>
+      </dl>
+      <p class="rep-resumen">${faltan > 0 ? `Faltan <b>${faltan}</b> visitas para la meta.` : '<b>Meta cumplida.</b>'}
+        Hay ${c.apartada} ${c.apartada === 1 ? 'tienda asignada' : 'tiendas asignadas'} por visitar y ${c.pendiente} libres.</p>
+
+      <h3 class="rep-titulo">Por persona</h3>
+      <p class="equipo-ayuda rep-ayuda">El porcentaje es de las tiendas que cada quien tiene: visitadas entre visitadas y asignadas. Toca a una persona para ver su lista.</p>
+      ${personas}
+    </section>`
+}

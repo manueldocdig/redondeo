@@ -184,6 +184,7 @@ body.con-panel .flotantes { display: none; }
   animation: subir 0.18s ease-out;
 }
 .panel[data-modo='equipo'], .panel[data-modo='lista'] { max-height: 75vh; max-height: 75dvh; }
+.panel[data-modo='reporte'] { max-height: 88vh; max-height: 88dvh; }
 @keyframes subir { from { transform: translateY(24px); opacity: 0.6; } }
 .panel-cerrar {
   position: sticky; top: -6px; float: right; margin: -8px -6px 0 8px; z-index: 1;
@@ -296,6 +297,43 @@ body.con-panel .flotantes { display: none; }
   margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--linea);
 }
 .form-persona .campo { margin: 0; }
+
+/* ---------------------------------------------------------------- Reporte */
+.rep-cifras {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 4px 0 14px;
+  background: var(--linea); border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden;
+}
+.rep-cifras div { background: var(--papel); padding: 10px 12px; }
+.rep-cifras dt { font-size: 0.85rem; color: var(--tinta-suave); }
+.rep-cifras dd {
+  margin: 2px 0 0; font-size: 1.9rem; line-height: 1; font-weight: 800; font-stretch: 70%;
+  font-variant-numeric: tabular-nums;
+}
+.rep-resumen { margin: 0 0 18px; line-height: 1.45; }
+.rep-titulo { margin: 0 0 4px; font-size: 1.25rem; font-stretch: 80%; font-weight: 750; }
+.rep-ayuda { margin: 0 0 8px; }
+.rep-persona { border-bottom: 1px solid var(--linea); }
+.rep-persona summary {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline;
+  padding: 12px 0; cursor: pointer; list-style: none;
+}
+.rep-persona summary::-webkit-details-marker { display: none; }
+.rep-nombre { font-weight: 650; font-size: 1.05rem; }
+.rep-nombre::before {
+  content: ''; display: inline-block; width: 0; height: 0; margin-right: 8px; vertical-align: 2px;
+  border-left: 6px solid var(--tinta-suave); border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+  transition: transform 0.15s;
+}
+.rep-persona[open] .rep-nombre::before { transform: rotate(90deg); }
+.rep-pct { font-weight: 800; font-size: 1.3rem; font-stretch: 70%; font-variant-numeric: tabular-nums; }
+.rep-sub { grid-column: 1 / -1; color: var(--tinta-suave); font-size: 0.9rem; padding-left: 14px; }
+.rep-barra {
+  grid-column: 1 / -1; height: 6px; margin: 4px 0 0 14px; border-radius: 3px;
+  background: var(--apartada); overflow: hidden;
+}
+.rep-barra span { display: block; height: 100%; background: var(--visitada); }
+.rep-lista { list-style: none; margin: 0 -16px 8px; padding: 0; }
+@media (prefers-reduced-motion: reduce) { .rep-nombre::before { transition: none; } }
 
 /* ---------------------------------------------------------------- Avisos */
 .aviso {

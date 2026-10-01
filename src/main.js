@@ -5,14 +5,15 @@ import {
   refrescarTamano,
 } from './mapa.js'
 import { iniciarTienda, htmlTienda, conectarTienda } from './tienda.js'
-import { actualizarAvance, htmlEquipo, htmlLista, descargarCSV } from './progreso.js'
+import { actualizarAvance, htmlEquipo, htmlLista, htmlReporte, descargarCSV } from './progreso.js'
 import { seguirUbicacion } from './ubicacion.js'
 
 // En modo demo (npm run demo) se usa una base de datos de mentiras en memoria.
 const api = import.meta.env.VITE_DEMO ? await import('./api-demo.js') : await import('./api.js')
 
 const $ = (id) => document.getElementById(id)
-let modoPanel = null // 'tienda' | 'lista' | 'equipo'
+let modoPanel = null // 'tienda' | 'lista' | 'equipo' | 'reporte'
+const reporteAbiertos = new Set() // personas desplegadas en el reporte
 let mapaListo = false
 let dejarDeSeguir = null
 let cancelarSuscripcion = null
@@ -151,6 +152,10 @@ $('btn-quien').addEventListener('click', (ev) => {
   ev.stopPropagation()
   abrirMenu($('menu-cuenta').hidden)
 })
+$('menu-cuenta').querySelector('[data-accion="reporte"]').addEventListener('click', () => {
+  abrirMenu(false)
+  mostrarPanel('reporte')
+})
 $('menu-cuenta').querySelector('[data-accion="cambiar-persona"]').addEventListener('click', () => {
   abrirMenu(false)
   pedirPersona()
@@ -178,7 +183,7 @@ function aplicarEstado(filaCruda) {
   pintarFiltros()
   if (modoPanel === 'tienda' && S.abierta === fila.cr && !$('panel-contenido').querySelector('form')) {
     mostrarPanel('tienda', fila.cr)
-  } else if (modoPanel === 'lista' || modoPanel === 'equipo') {
+  } else if (modoPanel === 'lista' || modoPanel === 'equipo' || modoPanel === 'reporte') {
     mostrarPanel(modoPanel)
   }
 }
@@ -223,6 +228,14 @@ function mostrarPanel(modo, cr = null) {
   } else if (modo === 'equipo') {
     cont.innerHTML = htmlEquipo()
     conectarEquipo(cont)
+  } else if (modo === 'reporte') {
+    cont.innerHTML = htmlReporte(reporteAbiertos)
+    cont.querySelectorAll('details[data-persona]').forEach((d) => d.addEventListener('toggle', () => {
+      const id = Number(d.dataset.persona)
+      if (d.open) reporteAbiertos.add(id)
+      else reporteAbiertos.delete(id)
+    }))
+    cont.querySelectorAll('[data-cr]').forEach((b) => b.addEventListener('click', () => mostrarPanel('tienda', b.dataset.cr)))
   }
   $('panel').hidden = false
   $('panel').dataset.modo = modo
