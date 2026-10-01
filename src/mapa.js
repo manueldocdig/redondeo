@@ -1,6 +1,6 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { S, ESTADOS, visible, esc } from './estado.js'
+import { S, ESTADOS, visible, esc, esMia } from './estado.js'
 
 let mapa
 let capa
@@ -25,7 +25,7 @@ export function crearMapa(el, onElegir) {
 function estilo(cr) {
   const e = S.estados.get(cr)
   const t = S.tiendas.get(cr)
-  const mia = e.asignado_a === S.yo && e.estado !== 'visitada'
+  const mia = esMia(e)
   const elegida = S.abierta === cr
   return {
     radius: elegida ? 14 : mia ? 11 : 9,

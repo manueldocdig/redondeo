@@ -25,10 +25,13 @@ export const ESTADOS = {
 export const FILTROS = [
   { id: 'todas', texto: 'Todas', aplica: () => true },
   { id: 'libres', texto: 'Libres', aplica: (e) => e.estado === 'pendiente' },
-  { id: 'mias', texto: 'Mías', aplica: (e) => e.asignado_a === S.yo && e.estado !== 'visitada' },
+  { id: 'mias', texto: 'Mías', aplica: (e) => esMia(e) },
   { id: 'asignadas', texto: 'Asignadas', aplica: (e) => e.estado === 'apartada' },
   { id: 'visitadas', texto: 'Visitadas', aplica: (e) => e.estado === 'visitada' },
 ]
+
+/** Asignada a mí o visitada por mí (incluye las que marqué "Ya la visité" directo). */
+export const esMia = (e) => e.asignado_a === S.yo || e.visitada_por === S.yo
 
 export const meta = () => Math.ceil(S.tiendas.size * PORCENTAJE_META)
 export const soyCoordinador = () => S.rol === 'coordinador'
