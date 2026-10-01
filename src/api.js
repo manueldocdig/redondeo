@@ -83,6 +83,7 @@ async function rpc(fn, args) {
 
 export const apartar = (cr, persona) => rpc('apartar_tienda', { p_cr: cr, p_persona: persona })
 export const liberar = (cr, persona) => rpc('liberar_tienda', { p_cr: cr, p_persona: persona })
+export const deshacerVisita = (cr, persona) => rpc('deshacer_visita', { p_cr: cr, p_persona: persona })
 export const reasignar = (cr, persona) => rpc('reasignar_tienda', { p_cr: cr, p_persona: persona })
 export const corregirUbicacion = (cr, lat, lng) => rpc('corregir_ubicacion', { p_cr: cr, p_lat: lat, p_lng: lng })
 export const agregarPersona = (nombre) => rpc('agregar_persona', { p_nombre: nombre })

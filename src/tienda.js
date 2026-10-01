@@ -48,8 +48,8 @@ export function htmlTienda(cr) {
   } else if (e.estado === 'apartada' && (mia || coord)) {
     acciones.push(`<button class="btn btn-primario" data-accion="form-visita">Marcar visitada</button>`)
     acciones.push(`<button class="btn btn-sutil" data-accion="liberar">${mia ? 'Ya no voy, liberarla' : 'Liberar'}</button>`)
-  } else if (e.estado === 'visitada' && coord) {
-    acciones.push(`<button class="btn btn-sutil" data-accion="liberar">Deshacer visita</button>`)
+  } else if (e.estado === 'visitada' && (e.visitada_por === S.yo || coord)) {
+    acciones.push(`<button class="btn btn-sutil" data-accion="quitar-visita">Quitar visita</button>`)
   }
 
   const reasignar = coord && e.estado !== 'visitada'
@@ -145,13 +145,17 @@ async function accion(ev, el, cr, tipo) {
       break
     }
     case 'liberar': {
-      const e = S.estados.get(cr)
-      const pregunta = e.estado === 'visitada'
-        ? `¿Deshacer la visita de ${nombre(e.visitada_por)}? Se borran sus notas y foto.`
-        : '¿Liberar esta tienda para que alguien más la pueda tomar?'
-      if (!confirm(pregunta)) return
+      if (!confirm('¿Liberar esta tienda para que alguien más la pueda tomar?')) return
       const fila = await ejecutar(boton, () => api.liberar(cr, S.yo))
       if (fila) { ctx.aplicarEstado(fila); ctx.avisar('Tienda liberada.') }
+      break
+    }
+    case 'quitar-visita': {
+      const e = S.estados.get(cr)
+      const quien = e.visitada_por === S.yo ? 'a ti' : `a ${nombre(e.visitada_por)}`
+      if (!confirm(`¿Quitar la visita? La tienda vuelve a quedar asignada ${quien}, sin visitar. Se borran las notas y la foto.`)) return
+      const fila = await ejecutar(boton, () => api.deshacerVisita(cr, S.yo))
+      if (fila) { ctx.aplicarEstado(fila); ctx.avisar(`Visita quitada. La tienda sigue asignada ${quien}.`) }
       break
     }
     case 'reasignar': {

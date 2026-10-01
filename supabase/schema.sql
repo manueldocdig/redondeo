@@ -274,6 +274,34 @@ begin
   return fila;
 end $$;
 
+-- Quien visitó una tienda puede quitar su propia visita (por si se equivocó); coordinación,
+-- cualquiera. La tienda vuelve a quedar asignada a quien la visitó, sin visitar.
+create or replace function public.deshacer_visita(p_cr text, p_persona bigint)
+returns public.estado_tienda
+language plpgsql security definer set search_path = public as $$
+declare
+  fila public.estado_tienda;
+begin
+  perform public.validar(p_persona);
+
+  update public.estado_tienda
+     set estado = case when coalesce(visitada_por, asignado_a) is null
+                       then 'pendiente'::public.estado_visita else 'apartada' end,
+         asignado_a = coalesce(visitada_por, asignado_a),
+         apartada_en = coalesce(apartada_en, now()),
+         visitada_por = null, visitada_en = null, notas = null, foto_path = null,
+         visita_lat = null, visita_lng = null, actualizado_en = now()
+   where cr = p_cr
+     and estado = 'visitada'
+     and (public.es_coordinador() or visitada_por = p_persona)
+  returning * into fila;
+
+  if not found then raise exception 'Solo quien visitó esta tienda puede quitar la visita'; end if;
+
+  insert into public.movimientos (cr, accion, persona_id, cuenta) values (p_cr, 'quitar_visita', p_persona, auth.uid());
+  return fila;
+end $$;
+
 create or replace function public.reasignar_tienda(p_cr text, p_persona bigint)
 returns public.estado_tienda
 language plpgsql security definer set search_path = public as $$
@@ -336,7 +364,7 @@ begin
     'public.es_integrante()', 'public.es_coordinador()', 'public.nombre_de(bigint)', 'public.validar(bigint)',
     'public.apartar_tienda(text, bigint)', 'public.liberar_tienda(text, bigint)',
     'public.marcar_visitada(text, bigint, text, text, double precision, double precision)',
-    'public.reasignar_tienda(text, bigint)',
+    'public.deshacer_visita(text, bigint)', 'public.reasignar_tienda(text, bigint)',
     'public.corregir_ubicacion(text, double precision, double precision)', 'public.agregar_persona(text)'
   ] loop
     execute format('revoke all on function %s from public, anon', f);

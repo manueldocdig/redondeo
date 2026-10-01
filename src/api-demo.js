@@ -101,6 +101,17 @@ export async function marcarVisitada(cr, persona, { notas, foto, lat, lng }) {
     notas: notas?.trim() || null, foto_path: foto ? `${cr}/demo.jpg` : null, visita_lat: lat, visita_lng: lng })
 }
 
+export async function deshacerVisita(cr, persona) {
+  await espera()
+  const e = estados.get(cr)
+  if (e.estado !== 'visitada' || (!esCoord() && e.visitada_por !== persona)) {
+    throw new Error('Solo quien visitó esta tienda puede quitar la visita')
+  }
+  const quien = e.visitada_por ?? e.asignado_a
+  return guardar({ ...e, estado: quien ? 'apartada' : 'pendiente', asignado_a: quien, visitada_por: null,
+    visitada_en: null, notas: null, foto_path: null, visita_lat: null, visita_lng: null })
+}
+
 export async function reasignar(cr, persona) {
   await espera()
   if (!esCoord()) throw new Error('Solo coordinación puede reasignar')
