@@ -356,6 +356,45 @@ exception when unique_violation then
   raise exception '% ya está en la lista', trim(p_nombre);
 end $$;
 
+-- Para corregir un nombre mal escrito. Las tiendas y el historial siguen a nombre de la misma persona.
+create or replace function public.renombrar_persona(p_id bigint, p_nombre text)
+returns public.personas
+language plpgsql security definer set search_path = public as $$
+declare
+  fila public.personas;
+begin
+  if not public.es_coordinador() then raise exception 'Solo coordinación puede cambiar nombres'; end if;
+  if coalesce(trim(p_nombre), '') = '' then raise exception 'Escribe un nombre'; end if;
+  update public.personas set nombre = trim(p_nombre) where id = p_id returning * into fila;
+  if not found then raise exception 'Esa persona ya no está en la lista'; end if;
+  return fila;
+exception when unique_violation then
+  raise exception '% ya está en la lista', trim(p_nombre);
+end $$;
+
+-- Solo se quita a quien nunca ha tenido tiendas (por ejemplo, un nombre agregado por error),
+-- para no perder quién hizo qué.
+create or replace function public.quitar_persona(p_id bigint)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.es_coordinador() then raise exception 'Solo coordinación puede quitar personas'; end if;
+
+  -- Bloquea la fila: si alguien le asigna una tienda al mismo tiempo, espera a que esto termine.
+  perform 1 from public.personas where id = p_id for update;
+  if not found then raise exception 'Esa persona ya no está en la lista'; end if;
+
+  if exists (select 1 from public.estado_tienda where asignado_a = p_id or visitada_por = p_id) then
+    raise exception '% tiene tiendas a su nombre y no se puede quitar', public.nombre_de(p_id);
+  end if;
+  if exists (select 1 from public.movimientos where persona_id = p_id) then
+    raise exception '% ya tiene movimientos registrados y se queda en la lista para no perder el historial',
+      public.nombre_de(p_id);
+  end if;
+
+  delete from public.personas where id = p_id;
+end $$;
+
 -- Solo usuarios con sesión pueden llamar las funciones (cada una valida el rol).
 do $$
 declare f text;
@@ -365,7 +404,8 @@ begin
     'public.apartar_tienda(text, bigint)', 'public.liberar_tienda(text, bigint)',
     'public.marcar_visitada(text, bigint, text, text, double precision, double precision)',
     'public.deshacer_visita(text, bigint)', 'public.reasignar_tienda(text, bigint)',
-    'public.corregir_ubicacion(text, double precision, double precision)', 'public.agregar_persona(text)'
+    'public.corregir_ubicacion(text, double precision, double precision)', 'public.agregar_persona(text)',
+    'public.renombrar_persona(bigint, text)', 'public.quitar_persona(bigint)'
   ] loop
     execute format('revoke all on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated', f);
@@ -390,4 +430,9 @@ create policy "integrantes ven formatos" on storage.objects
 -- ---------------------------------------------------------------- Tiempo real
 do $$ begin
   alter publication supabase_realtime add table public.estado_tienda;
+exception when duplicate_object then null; end $$;
+
+-- Para que los celulares vean al momento a quien coordinación agrega, renombra o quita.
+do $$ begin
+  alter publication supabase_realtime add table public.personas;
 exception when duplicate_object then null; end $$;

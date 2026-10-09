@@ -124,7 +124,7 @@ export function conectarTienda(el, cr) {
   })
 }
 
-async function ejecutar(boton, fn) {
+export async function ejecutar(boton, fn) {
   const texto = boton?.textContent
   if (boton) { boton.disabled = true; boton.textContent = 'Guardando…' }
   try {

@@ -66,6 +66,7 @@ export async function cargar() {
 }
 
 export async function cargarEstados() { return [...estados.values()].map((e) => ({ ...e })) }
+export async function cargarPersonas() { return personas.map((p) => ({ ...p })) }
 
 export function suscribir(cb) {
   oyentes.add(cb)
@@ -130,10 +131,34 @@ export async function agregarPersona(nombreNuevo) {
   await espera()
   if (!esCoord()) throw new Error('Solo coordinación puede agregar personas')
   const n = nombreNuevo.trim()
+  if (!n) throw new Error('Escribe un nombre')
   if (personas.some((p) => p.nombre === n)) throw new Error(`${n} ya está en la lista`)
-  const p = { id: personas.length + 1, nombre: n }
+  const p = { id: Math.max(0, ...personas.map((x) => x.id)) + 1, nombre: n }
   personas.push(p)
-  return p
+  return { ...p }
+}
+
+export async function renombrarPersona(id, nombreNuevo) {
+  await espera()
+  if (!esCoord()) throw new Error('Solo coordinación puede cambiar nombres')
+  const n = nombreNuevo.trim()
+  if (!n) throw new Error('Escribe un nombre')
+  if (personas.some((p) => p.nombre === n && p.id !== id)) throw new Error(`${n} ya está en la lista`)
+  const p = personas.find((x) => x.id === id)
+  if (!p) throw new Error('Esa persona ya no está en la lista')
+  p.nombre = n
+  return { ...p }
+}
+
+export async function quitarPersona(id) {
+  await espera()
+  if (!esCoord()) throw new Error('Solo coordinación puede quitar personas')
+  const i = personas.findIndex((p) => p.id === id)
+  if (i < 0) throw new Error('Esa persona ya no está en la lista')
+  if ([...estados.values()].some((e) => e.asignado_a === id || e.visitada_por === id)) {
+    throw new Error(`${nombre(id)} tiene tiendas a su nombre y no se puede quitar`)
+  }
+  personas.splice(i, 1)
 }
 
 export async function urlFoto(path) { return fotos.get(path) || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>' }

@@ -15,7 +15,7 @@ Mapa compartido para repartir y registrar las visitas a las 232 tiendas OXXO de 
   - asignar, reasignar y liberar cualquier tienda;
   - deshacer visitas;
   - mover el punto de una tienda a su ubicación actual;
-  - agregar personas;
+  - agregar personas al equipo, corregir su nombre o quitarlas: toca tu nombre arriba a la derecha y elige **Personas del equipo**. Solo se puede quitar a quien nunca ha tenido tiendas, para no perder el historial;
   - descargar el reporte en CSV.
 - **Ubicaciones aproximadas.** Un borde punteado indica que la ubicación es aproximada. Son 10 tiendas que no traían coordenadas en el Excel.
 - **Límite por persona.** Cada persona puede tener máximo 30 tiendas asignadas sin visitar. Se cambia en `limite_apartadas()` de `supabase/schema.sql`.
@@ -32,7 +32,9 @@ Mapa compartido para repartir y registrar las visitas a las 232 tiendas OXXO de 
 4. **Cerrar registros.** En **Authentication → Sign In / Providers**, apaga **Allow new users to sign up**.
 5. **Publicar.** Sube el repo a GitHub. En **Settings → Secrets and variables → Actions → Variables**, crea `SUPABASE_URL` y `SUPABASE_ANON_KEY`. En **Settings → Pages**, elige **GitHub Actions**. Cada push a `main` publica la app.
 
-Si cambia el Excel o la lista de personas (`data/personas.txt`, un nombre por línea), corre `npm run datos -- "/ruta/RUTA DE TIENDAS 2026.xlsx"` y vuelve a correr `supabase/seed.sql`.
+Si cambia el Excel, corre `npm run datos -- "/ruta/RUTA DE TIENDAS 2026.xlsx"` y vuelve a correr `supabase/seed.sql`. La lista `data/personas.txt` (un nombre por línea) solo sirve para la carga inicial; después, el equipo se maneja desde la app.
+
+**Al actualizar la app**, vuelve a correr `supabase/schema.sql` en el SQL Editor por si trae funciones nuevas. Se puede correr las veces que sea sin borrar datos.
 
 ## Desarrollo
 

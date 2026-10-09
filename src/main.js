@@ -6,13 +6,14 @@ import {
 } from './mapa.js'
 import { iniciarTienda, htmlTienda, conectarTienda } from './tienda.js'
 import { actualizarAvance, htmlEquipo, htmlLista, htmlReporte, descargarCSV } from './progreso.js'
+import { iniciarPersonas, htmlPersonas, conectarPersonas } from './personas.js'
 import { seguirUbicacion } from './ubicacion.js'
 
 // En modo demo (npm run demo) se usa una base de datos de mentiras en memoria.
 const api = import.meta.env.VITE_DEMO ? await import('./api-demo.js') : await import('./api.js')
 
 const $ = (id) => document.getElementById(id)
-let modoPanel = null // 'tienda' | 'lista' | 'equipo' | 'reporte'
+let modoPanel = null // 'tienda' | 'lista' | 'equipo' | 'reporte' | 'personas'
 const reporteAbiertos = new Set() // personas desplegadas en el reporte
 let mapaListo = false
 let dejarDeSeguir = null
@@ -62,6 +63,7 @@ $('form-login').addEventListener('submit', async (ev) => {
 
 const aId = (v) => (v == null ? null : Number(v))
 const normalizarEstado = (e) => ({ ...e, asignado_a: aId(e.asignado_a), visitada_por: aId(e.visitada_por) })
+const mapaPersonas = (lista) => new Map(lista.map((p) => [Number(p.id), { id: Number(p.id), nombre: p.nombre }]))
 
 async function entrarApp(cuenta) {
   if (S.cuenta === cuenta) return
@@ -82,7 +84,7 @@ async function entrarApp(cuenta) {
   S.rol = datos.rol
   S.tiendas = new Map(datos.tiendas.map((t) => [t.cr, t]))
   S.estados = new Map(datos.estados.map((e) => [e.cr, normalizarEstado(e)]))
-  S.personas = new Map(datos.personas.map((p) => [Number(p.id), { id: Number(p.id), nombre: p.nombre }]))
+  S.personas = mapaPersonas(datos.personas)
 
   const guardada = Number(leerLocal('redondeo-persona'))
   if (S.personas.has(guardada)) {
@@ -126,16 +128,13 @@ function pedirPersona() {
 let appIniciada = false
 function iniciarApp() {
   $('app').hidden = false
-  $('btn-quien').textContent = nombre(S.yo)
-  $('btn-quien').classList.toggle('yo-coord', soyCoordinador())
-  $('menu-nombre').textContent = nombre(S.yo)
-  $('menu-tipo').textContent = soyCoordinador() ? ', con cuenta de coordinación' : ''
+  pintarCuenta()
   if (!appIniciada) {
     appIniciada = true
     crearMapa($('mapa'), (cr) => mostrarPanel('tienda', cr))
     dibujarTiendas()
     encuadrar()
-    cancelarSuscripcion = api.suscribir(aplicarEstado)
+    cancelarSuscripcion = api.suscribir(aplicarEstado, recargarPersonas)
   } else {
     actualizarTodos()
   }
@@ -144,6 +143,14 @@ function iniciarApp() {
 }
 
 // ---------------------------------------------------------------- Menú de la cuenta (tocar tu nombre)
+function pintarCuenta() {
+  $('btn-quien').textContent = nombre(S.yo)
+  $('btn-quien').classList.toggle('yo-coord', soyCoordinador())
+  $('menu-nombre').textContent = nombre(S.yo)
+  $('menu-tipo').textContent = soyCoordinador() ? ', con cuenta de coordinación' : ''
+  $('menu-cuenta').querySelector('[data-accion="personas"]').hidden = !soyCoordinador()
+}
+
 function abrirMenu(abrir) {
   $('menu-cuenta').hidden = !abrir
   $('btn-quien').setAttribute('aria-expanded', String(abrir))
@@ -155,6 +162,10 @@ $('btn-quien').addEventListener('click', (ev) => {
 $('menu-cuenta').querySelector('[data-accion="reporte"]').addEventListener('click', () => {
   abrirMenu(false)
   mostrarPanel('reporte')
+})
+$('menu-cuenta').querySelector('[data-accion="personas"]').addEventListener('click', () => {
+  abrirMenu(false)
+  mostrarPanel('personas')
 })
 $('menu-cuenta').querySelector('[data-accion="cambiar-persona"]').addEventListener('click', () => {
   abrirMenu(false)
@@ -188,6 +199,23 @@ function aplicarEstado(filaCruda) {
   }
 }
 
+/** Se agregó, renombró o quitó a alguien (aquí o en otro celular): refresca donde aparecen los nombres. */
+function personasCambiaron() {
+  if (S.persona != null && !S.personas.has(S.persona)) S.persona = null
+  // En "¿Quién eres?" se ven los nombres nuevos; si quitaron a quien usa este celular, se vuelve a preguntar.
+  if (!$('quien').hidden || !S.personas.has(S.yo)) { pedirPersona(); return }
+  pintarCuenta()
+  pintarFiltros()
+}
+
+async function recargarPersonas() {
+  try {
+    S.personas = mapaPersonas(await api.cargarPersonas())
+    personasCambiaron()
+    if (modoPanel && !panelOcupado()) mostrarPanel(modoPanel, S.abierta)
+  } catch { /* sin conexión: se recarga al volver a la app */ }
+}
+
 function aplicarTienda(t) {
   S.tiendas.set(t.cr, t)
   moverTienda(t.cr, t.lat, t.lng)
@@ -199,16 +227,24 @@ function aplicarTienda(t) {
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || !S.tiendas.size) return
   try {
-    const estados = await api.cargarEstados()
+    const [estados, personas] = await Promise.all([api.cargarEstados(), api.cargarPersonas()])
     S.estados = new Map(estados.map((e) => [e.cr, normalizarEstado(e)]))
+    S.personas = mapaPersonas(personas)
     actualizarTodos()
     actualizarAvance()
-    pintarFiltros()
-    if (modoPanel && !$('panel-contenido').querySelector('form')) mostrarPanel(modoPanel, S.abierta)
+    personasCambiaron()
+    if (modoPanel && !panelOcupado()) mostrarPanel(modoPanel, S.abierta)
   } catch { /* sin conexión: se queda con lo último que tenía */ }
 })
 
 // ---------------------------------------------------------------- Panel
+/** ¿Hay algo a medio escribir en el panel? Entonces los cambios de otros celulares no lo redibujan. */
+function panelOcupado() {
+  const cont = $('panel-contenido')
+  if (modoPanel === 'tienda') return cont.querySelector('form') != null
+  return [...cont.querySelectorAll('input')].some((i) => i.value.trim())
+}
+
 function mostrarPanel(modo, cr = null) {
   const anterior = S.abierta
   const mismaVista = modoPanel === modo && anterior === (modo === 'tienda' ? cr : null)
@@ -236,6 +272,9 @@ function mostrarPanel(modo, cr = null) {
       else reporteAbiertos.delete(id)
     }))
     cont.querySelectorAll('[data-cr]').forEach((b) => b.addEventListener('click', () => mostrarPanel('tienda', b.dataset.cr)))
+  } else if (modo === 'personas') {
+    cont.innerHTML = htmlPersonas()
+    conectarPersonas(cont)
   }
   $('panel').hidden = false
   $('panel').dataset.modo = modo
@@ -270,18 +309,7 @@ function conectarEquipo(cont) {
   })
   cont.querySelector('[data-accion="csv"]')?.addEventListener('click', descargarCSV)
   cont.querySelector('[data-accion="cambiar-persona"]').addEventListener('click', pedirPersona)
-  cont.querySelector('.form-persona')?.addEventListener('submit', async (ev) => {
-    ev.preventDefault()
-    const input = ev.currentTarget.querySelector('input')
-    try {
-      const p = await api.agregarPersona(input.value)
-      S.personas.set(Number(p.id), { id: Number(p.id), nombre: p.nombre })
-      avisar(`${p.nombre} ya está en el equipo.`)
-      mostrarPanel('equipo')
-    } catch (err) {
-      avisar(err.message, true)
-    }
-  })
+  cont.querySelector('[data-accion="personas"]')?.addEventListener('click', () => mostrarPanel('personas'))
 }
 
 $('panel-cerrar').addEventListener('click', cerrarPanel)
@@ -354,4 +382,5 @@ $('btn-ubicacion').addEventListener('click', () => {
 window.addEventListener('pagehide', () => { cancelarSuscripcion?.(); dejarDeSeguir?.() })
 
 iniciarTienda(api, { avisar, aplicarEstado, aplicarTienda, mostrarPanel })
+iniciarPersonas(api, { avisar, mostrarPanel, personasCambiaron })
 arrancar()

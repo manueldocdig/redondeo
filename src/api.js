@@ -64,15 +64,24 @@ export async function cargarEstados() {
   return data
 }
 
-/** Avisa cada vez que alguien del equipo cambia el estado de una tienda. */
-export function suscribir(cb) {
-  const canal = sb
-    .channel('estado_tienda')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'estado_tienda' }, (p) => {
-      if (p.new && p.new.cr) cb(p.new)
-    })
-    .subscribe()
-  return () => sb.removeChannel(canal)
+export async function cargarPersonas() {
+  const { data, error } = await sb.from('personas').select('id, nombre').order('nombre')
+  if (error) throw falla(error)
+  return data
+}
+
+/** Avisa cada vez que alguien del equipo cambia el estado de una tienda o la lista de personas. */
+export function suscribir(alCambiarEstado, alCambiarPersonas) {
+  const canales = [
+    sb.channel('estado_tienda').on('postgres_changes', { event: '*', schema: 'public', table: 'estado_tienda' }, (p) => {
+      if (p.new && p.new.cr) alCambiarEstado(p.new)
+    }),
+    // En su propio canal: si `personas` aún no está en la publicación de tiempo real, no tumba el de tiendas.
+    sb.channel('personas').on('postgres_changes', { event: '*', schema: 'public', table: 'personas' }, () => {
+      alCambiarPersonas()
+    }),
+  ].map((c) => c.subscribe())
+  return () => canales.forEach((c) => sb.removeChannel(c))
 }
 
 async function rpc(fn, args) {
@@ -87,6 +96,8 @@ export const deshacerVisita = (cr, persona) => rpc('deshacer_visita', { p_cr: cr
 export const reasignar = (cr, persona) => rpc('reasignar_tienda', { p_cr: cr, p_persona: persona })
 export const corregirUbicacion = (cr, lat, lng) => rpc('corregir_ubicacion', { p_cr: cr, p_lat: lat, p_lng: lng })
 export const agregarPersona = (nombre) => rpc('agregar_persona', { p_nombre: nombre })
+export const renombrarPersona = (id, nombre) => rpc('renombrar_persona', { p_id: id, p_nombre: nombre })
+export const quitarPersona = (id) => rpc('quitar_persona', { p_id: id })
 
 export async function marcarVisitada(cr, persona, { notas, foto, lat, lng }) {
   let fotoPath = null

@@ -66,16 +66,8 @@ export function htmlEquipo() {
       </table>
       <p class="equipo-ayuda">Toca a una persona para ver solo sus tiendas en el mapa.</p>
 
-      ${soyCoordinador() ? `
-        <form class="form-persona">
-          <label class="campo">
-            <span>Agregar persona al equipo</span>
-            <input type="text" maxlength="40" required placeholder="Nombre" />
-          </label>
-          <button class="btn" type="submit">Agregar</button>
-        </form>` : ''}
-
       <div class="acciones">
+        ${soyCoordinador() ? `<button class="btn" data-accion="personas">Agregar o editar personas</button>` : ''}
         ${soyCoordinador() ? `<button class="btn" data-accion="csv">Descargar reporte (CSV)</button>` : ''}
         <button class="btn btn-sutil" data-accion="cambiar-persona">No soy ${esc(nombre(S.yo))}, cambiar</button>
         <button class="btn btn-sutil" data-salir>Cerrar sesión</button>
@@ -149,7 +141,7 @@ export function descargarCSV() {
 const porcentaje = (n, de) => (de ? Math.round((n / de) * 100) : 0)
 
 /** Tiendas de cada persona: las que tiene asignadas y las que ya visitó. */
-function tiendasPorPersona() {
+export function tiendasPorPersona() {
   const mapa = new Map([...S.personas.keys()].map((id) => [id, []]))
   for (const e of S.estados.values()) {
     const id = e.estado === 'visitada' ? e.visitada_por : e.estado === 'apartada' ? e.asignado_a : null

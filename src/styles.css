@@ -183,7 +183,7 @@ body.con-panel .flotantes { display: none; }
   padding: 18px 16px calc(env(safe-area-inset-bottom) + 18px);
   animation: subir 0.18s ease-out;
 }
-.panel[data-modo='equipo'], .panel[data-modo='lista'] { max-height: 75vh; max-height: 75dvh; }
+.panel[data-modo='equipo'], .panel[data-modo='lista'], .panel[data-modo='personas'] { max-height: 75vh; max-height: 75dvh; }
 .panel[data-modo='reporte'] { max-height: 88vh; max-height: 88dvh; }
 @keyframes subir { from { transform: translateY(24px); opacity: 0.6; } }
 .panel-cerrar {
@@ -292,11 +292,23 @@ body.con-panel .flotantes { display: none; }
 .tabla-equipo tbody tr:hover, .tabla-equipo tr.activa { background: #fdf6e3; }
 .tu { color: var(--tinta-suave); font-weight: 450; }
 .equipo-ayuda { margin: 8px 0 0; font-size: 0.88rem; color: var(--tinta-suave); }
-.form-persona {
-  display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end;
-  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--linea);
-}
+
+/* ---------------------------------------------------------------- Personas del equipo (coordinación) */
+.form-persona { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; margin: 0 0 22px; }
 .form-persona .campo { margin: 0; }
+.lista-personas { list-style: none; margin: 0; padding: 0; }
+.persona {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 64px; padding: 8px 0; border-bottom: 1px solid var(--niebla);
+}
+.persona-texto { display: grid; flex: 1; min-width: 0; }
+.persona-nombre { font-weight: 650; font-size: 1.02rem; overflow-wrap: anywhere; }
+.persona-sub { color: var(--tinta-suave); font-size: 0.9rem; }
+.persona.editando { padding: 14px 0; }
+.form-editar { flex: 1; }
+.form-editar-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-editar .enlace, .form-editar .equipo-ayuda { margin-top: 12px; }
+.enlace-peligro { color: var(--peligro); }
 
 /* ---------------------------------------------------------------- Reporte */
 .rep-cifras {
